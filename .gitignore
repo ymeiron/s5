@@ -1,0 +1,5 @@
+__pycache__
+dist
+build
+s5.egg-info
+.vscode
