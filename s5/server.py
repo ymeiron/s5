@@ -1,5 +1,5 @@
-import falcon, base64, secrets, gc, threading, wsgiref.simple_server, hashlib, getpass, socket, json, argparse, os
-from typing import IO
+import falcon, base64, secrets, gc, threading, wsgiref.simple_server, hashlib, getpass, socket, json, argparse, os, ctypes, sys
+from typing import IO, Union
 
 class Counter:
     def __init__(self, success_max: int = 0, failure_max: int = 0):
@@ -60,6 +60,13 @@ class Request_handler(wsgiref.simple_server.WSGIRequestHandler):
         Request_handler.logfile.write("%s - - [%s] %s\n" % (self.client_address[0], self.log_date_time_string(), format%args))
         Request_handler.logfile.flush()
 
+def overwrite_memory_hack(obj: Union[str, bytes]):
+    """This only works correctly for a string if it's purely ASCII."""
+    size = len(obj)
+    ptr = (ctypes.c_byte * size).from_address(id(obj) + sys.getsizeof(obj) - size - 1)
+    mask = b'X'*size
+    ctypes.memmove(ptr, mask, size)
+
 def server():
     parser = argparse.ArgumentParser(description='Store a short secret in memory.', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--bind-address', default='0.0.0.0', help='Bind address')
@@ -77,13 +84,16 @@ def server():
     identifier = token[:48]
     symkey = token[48:]
 
-    secret = getpass.getpass('Enter secret: ')
-    secret = secret.encode()
-    response = base64.b64encode(encrypt_secret(secret, symkey)).decode()
+    secret_text = getpass.getpass('Enter secret: ')
+    secret_bytes = secret_text.encode()
+    response = base64.b64encode(encrypt_secret(secret_bytes, symkey)).decode()
 
     m = hashlib.new('sha256')
-    m.update(secret)
+    m.update(secret_bytes)
     print("Secret's sha256: " + m.hexdigest()[:6] + '...')
+    overwrite_memory_hack(secret_text)
+    overwrite_memory_hack(secret_bytes)
+    del secret_text, secret_bytes
     gc.collect()
 
     if not args.foreground:
