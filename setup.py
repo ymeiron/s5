@@ -16,5 +16,6 @@ setup(name='s5',
             's5server=s5:server',
             's5client=s5:client'
         ]
-    }
+    },
+    install_requires=['falcon']
 )
