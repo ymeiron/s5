@@ -75,7 +75,7 @@ def server():
     parser.add_argument('--client-file', default='~/.s5client.json', help='File for client process')
     parser.add_argument('--no-client-file', action='store_true', help='If set, no client file is produced, token shown on screen')
     parser.add_argument('--foreground', action='store_true', help='Do not go to background')
-    parser.add_argument('--logfile', default='~/s5server.log', help='Log filename')
+    parser.add_argument('--logfile', default='~/s5server.log', help='Log filename (use "stdout" to output to screen)')
     parser.add_argument('--success-max', type=int, default=1, help='Turn server off after that many successful attempts (0 for unlimited)')
     parser.add_argument('--failure-max', type=int, default=0, help='Turn server off after that many failed attempts (0 for unlimited)')
     args = parser.parse_args()
@@ -101,7 +101,10 @@ def server():
 
     app = application = falcon.App()
 
-    Request_handler.logfile = open(os.path.expanduser(args.logfile), 'a')
+    if args.logfile == 'stdout':
+        Request_handler.logfile = sys.stdout
+    else:
+        Request_handler.logfile = open(os.path.expanduser(args.logfile), 'a')
 
     for port in range(args.port_min, args.port_max+2):
         if port > args.port_max: raise RuntimeError('Could not find a free port.')
