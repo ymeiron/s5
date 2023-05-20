@@ -70,14 +70,14 @@ def overwrite_memory_hack(obj: Union[str, bytes]):
 def server():
     parser = argparse.ArgumentParser(description='Store a short secret in memory.', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--bind-address', default='0.0.0.0', help='Bind address')
-    parser.add_argument('--port-min', default='13500', help='First port to try to bind to')
-    parser.add_argument('--port-max', default='13599', help='Maximum port number to attempt')
+    parser.add_argument('--port-min', type=int, default=13500, help='First port to try to bind to')
+    parser.add_argument('--port-max', type=int, default=13599, help='Maximum port number to attempt')
     parser.add_argument('--client-file', default='~/.s5client.json', help='File for client process')
     parser.add_argument('--no-client-file', action='store_true', help='If set, no client file is produced, token shown on screen')
     parser.add_argument('--foreground', action='store_true', help='Do not go to background')
     parser.add_argument('--logfile', default='~/s5server.log', help='Log filename')
-    parser.add_argument('--success-max', default=1, help='Turn server off after that many successful attempts (0 for unlimited)')
-    parser.add_argument('--failure-max', default=0, help='Turn server off after that many failed attempts (0 for unlimited)')
+    parser.add_argument('--success-max', type=int, default=1, help='Turn server off after that many successful attempts (0 for unlimited)')
+    parser.add_argument('--failure-max', type=int, default=0, help='Turn server off after that many failed attempts (0 for unlimited)')
     args = parser.parse_args()
 
     token = secrets.token_bytes(96)
@@ -103,9 +103,8 @@ def server():
 
     Request_handler.logfile = open(os.path.expanduser(args.logfile), 'a')
 
-    port_min, port_max = int(args.port_min), int(args.port_max)
-    for port in range(port_min, port_max+2):
-        if port > port_max: raise RuntimeError('Could not find a free port.')
+    for port in range(args.port_min, args.port_max+2):
+        if port > args.port_max: raise RuntimeError('Could not find a free port.')
         try:
             httpd = wsgiref.simple_server.make_server(args.bind_address, port, app, handler_class=Request_handler)
             break
